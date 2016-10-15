@@ -1,0 +1,195 @@
+\documentclass[10pt]{llncs}
+
+\usepackage{graphics}
+
+\pagestyle{headings} 
+\begin{document}
+\thispagestyle{plain}
+\begin{flushleft}
+\LARGE
+\textbf{Effective QoS aware web service composition in dynamic environment}
+\\
+\normalsize
+\vspace{20pt}
+Peter Bartalos and M\'{a}ria Bielikov\'{a}
+\end{flushleft}
+\vspace{80pt}
+\textbf{Abstract} Nowadays, several web services composition approaches, each considering various aspects of the composition problem, are known. Consequently, a lot of attention shifts to the performance issues of web service composition. This paper presents an effective QoS aware  composition approach.Our work focuses to its performance, which is studied also in dynamically changing environment, where new services are deployed, some services are removed,or the QoS characteristics change in time. We analyze the impact of the need to manage these changes to the sojourn of the composition query in the system. The experiments show that the proposed composition system is handling these changes effectively and the sojourn time is not signiﬁcantly affected.
+
+\section{Introduction}
+Web service composition [8] is a process of arranging several web services into workﬂows. The aim is to bring a utility, which cannot be provided by a single service. Its automation showed to be a challenging task. The research of service composition in last years tends to focus on issues related to QoS [3,5,6,9,13,15], pre/post-conditions [4, 6, 12], user constraints and preferences (e.g. soft constraints) [2, 10, 14], consideration of complex dependencies between services [7, 16].
+
+Several approaches deal with performance and scalability issues of the composition process [3, 5, 6, 9, 12]. These use effective data structures created during preprocessing to speed up the composition. As it is true for the web in general, also web services change in time. New services are deployed, some of them arer emoved. Moreover,thenon-functional properties of services may change frequently. The aim is to ﬁnd a composite service with the best global QoS characteristic, computed from the QoS attributes of single services based on aggregation rules [3, 13, 15]. The composition system must ﬂexibly react to these changes. The solution should reﬂect the current situation in the service environment. If the changes are not managed, it may happen that the designed composition does not use the right services, it includes services which are already not executable, or it is not optimal from QoS point of view. Hence, we do not achieve the satisfaction of the user goal based on which the composition is realized. On the other side, the dynamic changes of services require updating the data structures of the composition system, before we start new composition. Thus, the dynamic changes affect the composition time. To avoid too much delay, the updates must be realized quickly.In this paper we deal with the performance and scalability of service composition operating in dynamic environment. We present our designed algorithms, which were already used in our previous work and extended to more effectively manage the dynamic changes.
+
+
+\section{Related work}
+Several approaches automating the web service composition had already been proposed.They showed to be useful when looking for a composition aware of pre-/post conditions, QoS and satisfying the user constraints, preferences. Promising results were achieved also regarding the performance. There are approaches able to compose services in acceptable time, even if the number of services in the registry rises to some ten thousands. However, only little attention had been given to the research of approaches handling the dynamic changes in the service environment.
+
+ As we studied approaches in [5, 9, 12], we found out that there are some issues appearing in each of them. First, they use pre-processing during which effective data structures are created. These represent the services and the interconnections between them. Another similarity is in the base of the composition process. It is a forward search, starting with the concepts describing the inputs provided in the query (at semantic level). The set of these provided concepts is then incrementally extended. In each iteration, concepts associated with outputs of services having provided inputs are appended. An input is provided if it is associated with a concept, already included in the set of provided concepts. This continues in iterations until all concepts required in the user query are not provided and new concept can be appended. During the iterations, also an acyclic graph of services, depicting all possible solutions of the composition problem, is built. After all required concepts are produced, to remove redundant services, a backward search is performed, starting with services directly producing the outputs required in the user query. 
+
+In [12] the authors present a Prolog based, pre-/post-condition aware composition approach. It does not consider the QoS of services. The aim of pre-processing in this approach is to convert the service descriptions into Prolog terms. The semantic relations (e.g. subsumption) are also pre-processed. The built-in indexing scheme facilitates fast composition. The authors deal also with \textit{incremental updates} requiredwhen adding a new service. They results show that managing an update requires much more time, than the composition (e.g. 1 vs. 18 msec).
+
+ An effective, QoS aware composition approach is presented in [9]. It is based on modiﬁed dynamic programming, and a data structure having three parts. The ﬁrst represents services, the second concepts, the third the mapping of the concepts to service parameters. The composition is effective due a ﬁltering utilized to reduce the search space.The pruning removes services i) which have no inputs (thus can not be executed), and ii) are not optimal from QoS point of view. During forward chaining, when adding new concepts into the set of provided concepts, the aggregated QoS values of services are updated to ﬁnd the optimal value. Also the provided concepts are related to an optimal QoS value, calculated based on the optimal aggregated QoS value of services which are producing it.
+
+ In [5] we had presented a composition approach dealing with performance and scalability issues. The difference between our approach and [9] seems to be minor from the algorithm point of view. Due poor description of the algorithm in [9], we are not able to exactly state the difference. However, it is clear that in [9] different data structures are used to express the services, and their relation to other services and concepts.Moreover,our work deals also with pre-/post-conditions,just as [12]. These aspects of our composition system are described in [4, 6].
+
+\section{Service composition process}
+The aim of our composition approach presented in [4] was to select usable services. The service is usable if all its inputs are provided thus can be executed. The inputs are provided in the user query, or as an output of another usable service. To select usable services, forward chaining is realized. During it, we also select the best provider for each input of all services, considering QoS. This process becomes a high computation demanding task as the number of services, their inputs, and number of input providers rises. The complexity of the computation is also strongly dependent on the interconnections between the services. 
+
+To speed up the \textit{select usable} services process, we propose search space restriction. Its aim is the selection of \textit{unusable services}. A service is unusable, if at least one its input is not provided in the user query, neither as output of ancestor services. The process lies on identiﬁcation of such services, for which there is at least one input not provided by any available service, i.e. the only case when it is usable is if the respective input is provided in the user query. These services are identiﬁed during preprocessing. We call them \textit{user data dependent services}.
+
+ The selection of (un)usable service is done by marking a service. The marks are: UNDEC if it is undecided if the service is unusable, USAB if the service is usable, UNUSAB if the service is unusable, UDD if the service is user data dependent, UDDPROV if the service is UDD and all dependent inputs are provided in the query. A lot of our work had been redesigning the effective data structures used in [4,5], to be quickly modiﬁable when the service environment changes. In the following, we present an overview of the data structures to be able to understand the algorithms introduced later. The most important are:
+
+ - \textit{AllServices}: a collection of all available services.
+
+ - \textit{ConceptProviders}: a collection, where an element is a key-value pair of i) \textit{concept} and ii) list of services having an output associated with \textit{concept}. 
+
+- \textit{ConceptConsumers}: a collection, where an element is a key-value pair of i) \textit{concept} and ii) list of services having an input associated with \textit{concept}. 
+
+- \textit{InputDependents}: the same as \textit{ConceptConsumers}, but contains only services marked with UDD.
+
+- \textit{UserDataDependents}: a collection of services marked with UDD. 
+
+- \textit{SuperConcepts}: a collection, where an element is a key-value pair of i) \textit{concept }and ii) list of \textit{concepts }(transitively) subsumed by \textit{concept}.
+
+ A service is represented as a complex data structure having several attributes. Its aim is to store information about service’s properties and interconnections to ancestor, and successor services. The main attributes are: 
+
+- \textit{usability}: stores the mark of the service as presented before. 
+
+- \textit{unprovidedInputs}: the number of unprovided user data dependent inputs. 
+
+- \textit{inputs}: list of concepts associated with the inputs. 
+
+-\textit{inputProviders}: for each input, it stores a list of services providing it. 
+
+- \textit{bestQoSProviders}: for each input, it stores a reference to a service which provides it and has the best QoS. 
+
+- \textit{successors}: list of successor services
+\subsection{\textit{Restricting the search space}
+}
+
+The \textit{select unusable} services process performs as presented in Alg. 1. It can be started only after we select services having all inputs provided in the user query and mark them as \textit{USAB}. This is the part of Alg. 2 at lines 1 to 12. Then, the process starts evaluating which services can be marked with \textit{UDDPROV} (lines 1 to 6). For each \textit{provided input} in the user query, we get the list of services from \textit{InputDependents}, requiring the respective \textit{provided input}. For each service in the \textit{list}, we decrement the number of unprovided user data dependent inputs. If this number is zero, the service is potentially usable. We cannot be sure because it may have other inputs which do not rely on provision in the user query. This is evaluated later.
+
+ Next, we decide which user data dependent services are not usable (lines 7 to 9). We traverse \textit{UserDataDependents} and if the respective service is not usable, either has not provided all user data dependent inputs, it is marked with \textit{UNUSAB}. Then, we create a list of services still having undecided usability (lines 10 to 12).
+
+ Up to now, we know which user data dependent services are unusable. The (un)usability of these services inﬂuences also their successors. If there is a service having some input for which all providers were marked with \textit{UNUSAB}, it is unusable too. In the rest, we evaluate this (lines 13 to 25).
+
+\begin{figure}[h]
+\includegraphics{images/alg3.png}
+\end{figure}
+
+
+While there is a potential service which may be marked unusable, we traverse services from \textit{toProcess}. For each input of the respective service, we check if it is for sure unprovided, which a default assumption is. If it is provided in the user query, then \textit{isUnprovidedInput} is false. If it is not, we traverse all the input provider services. If there is at least one which is not unusable, then \textit{isUnprovidedInput} is false. This case does not mean that the input is provided, we just cannot be sure that it is not. If we are sure that the service has at least one unprovided input, i.e.\textit{isUnprovidedInput}was not changed to false, it is unusable. If we mark some service as unusable, the evaluation starts again. The reason is that the found unusable service affects its successors, which may thus become unusable too.
+
+
+
+After the \textit{select unusable} services process ﬁnishes, several services were marked as unusable. These cannot be used in the composition. Thus, we restricted the search space and we will not waste time during the composition with several unusable services. Note that we did not ﬁnd all unusable services. We found each unusable service which is user data dependent, or it is a (indirect) successor of it.
+
+\subsection{\textit{Discovering usable services}}
+The \textit{select usable} services process has two phases, see Alg. 2. First, we select services having all inputs provided in the user query. Second, we realize forward chaining to ﬁnd other usable services. The ﬁrst phase starts by collecting services which have some inputs provided in the user query (lines 2, 3). Then, for each potential service we check if it has provided all inputs (lines 5 to 12). If so, the service is marked as \textit{USAB} and put in \textit{toProcess}. 
+
+The second phase (lines13to30) performs in a loop for all services in \textit{toProcess}. For a respective \textit{service}, we check if there is some provider of its inputs (lines 15 to 24). During this, we select the provider having the best QoS at the moment. If the service has provided all inputs, it is marked with \textit{USAB} and we recalculate its aggregated QoS based on the best QoS providers. Then, for all its successors, we check if their usability is undecided or if the \textit{service} can improve the aggregated QoS of the respective \textit{successor}. If so, the \textit{successor} is processed too.
+
+\begin{figure}[h]
+\includegraphics{images/alg2.png}
+\end{figure}
+
+
+\section{ Dynamic aspects of service composition
+}
+
+Our composition system can be seen as a queuing system with different type of requests [1]. It works as depicted in Fig. 1. When the system starts, it initializes its data structures based on currently available services. After, it is waiting for update requests, or user queries (1). These are collected in queues and processed regarding the \textit{ﬁrst in ﬁrst out} rule. The updates are managed with higher, \textit{non-preemptive} priority, i.e. the composition is not interrupted if an update request arrives. If anupdate request arrives (2), i.e. new service is available, some service become unavailable, or the QoS characteristics of some service had changed, we update the affected data structures. When all the changes are managed (3), the system is ready to process new user query. If a new query has already been received, the system processes it immediately (4). Otherwise, it goes to waiting state (5). Here, it again waits for an update request, or composition query (6). The composition is followed by the reinitialization(7). After, we manage update requests, if some had arrived (8). If not, we process a new user query for composition (9), or go to waiting state (10).
+
+
+\begin{figure}[h]
+\includegraphics{images/obr1.png}
+\caption{Composition system life cycle}
+\end{figure}
+
+The change of service QoS characteristics are managed in constant time, independently on the size of the service repository. It requires only changing the values of the QoS attributes in the object representing the corresponding service. The updates required because some service is made (un)available are divided into two cases. Adding a new service requires creating a new object representing it and discovering its interconnections with other objects. When the service is removed permanently, we have to remove the interconnections with other objects. The temporal removing of the service is possible, too. This is useful if we expect that it will be made available again. The temporal removing of the service is done in constant time, by setting a ﬂag depicting the (un)availability of the service. To make such a service available again, we only have to set a ﬂag once again. The adding of a new service, and permanent removal of some service are more complicated. They depend on the overall set of services available in the service repository, and their interconnection. 
+
+The adding of a new service starts with adding a service into \textit{AllServices}, see Alg. 3. Then, we discover the interconnections with ancestor services (lines 2 to 10). For each input, we determine the services providing it. If there is no input provider, we add the service to \textit{UserDataDependents}, and \textit{InputDependents}. Otherwise, we add it to the list of successors of each provider. Finally, we add it to services requiring the given input.
+
+\begin{figure}[h]
+\includegraphics{images/alg.png}
+\end{figure}
+
+In the next, we create a collection of distinct concepts subsumed by some service outputs (lines 11 to 14). For each such \textit{superConcept}, we add the service to a list of its providers (line16). Each service for which \textit{service} produces input data is added to its successors (lines17to19). Finally, for each successor we add \textit{service} to providers of all inputs produced by it (line 23). During this, we check if the successor is in \textit{UserDataDependents}. If it is, and the service provides an input, which was the only unprovided input, the successor is removed from \textit{UserDataDependents}.
+
+The permanent removal of the services is a revert operation to adding a new service. It deletes the interconnections to other services, and the references of the object representing it, from each data structure. Due a straightforwardness of the process and a lack of space, we omit its detailed description.
+
+
+\section{Evaluation}
+The evaluation of our approach is split into evaluation of i) times required to add/remove services, compose services, and reinitialize the system, ii) behavior of the system due continuing query arrival, without or with dynamic changes in the service registry. All experiments had been realized using a Java implementation of ourcompositionsystem.The computations had been running on a machine with two 64-bit Quad-Core AMD Opteron(tm) 8354 2.2Ghz processors with 64GB RAM. 
+
+The experiments were realized using data sets generated by a third party tool (\tiny{http://ws-challenge.georgetown.edu/wsc09/software.html}\normalsize) used to create data sets for Web \textit{services Challenge 2009} [11]. We generated test sets consisting from 10000 to 100 000 services. For each test set, the solution requires at least 50 services to compose. The number of concepts in the ontology is from 30 000 to 190 000. To allow comparison with others, the data sets are available at \tiny http://semco.fiit.stuba. sk/compositiontestsets.
+\normalsize
+
+ In Tab. 1 and Fig. 2 we see how the complexity of the service set (e.g. its size) affects the time required to i) add a new service (as depicted in Alg. 3), ii) permanently remove a service, iii) compose services, and iv) reinitialize the system after composition. In our experiment we measured the time of adding 1000 services into a repository, and permanent removing of the same services. As we see, removing a service is more time demanding. This is because the removal requires more traversal of data structures, to ﬁnd the position of the service’s object reference. The composition and update times do not necessary rise as the number of services rises. This is because they are strongly affected also by the interconnections of services, and QoS parameters. The reinitialization time is linearly dependent on the number of all services and the number of user data dependent services. In our experiments, it reached maximum of 53\% of the composition time, 33\% in average.
+
+\begin{table}
+\centering
+\caption{Operation times.}
+\label{my-label}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{Web services} & \textbf{Add}  & \textbf{Remove} & \textbf{Reinitialization} & \textbf{Composition} \\ \hline
+										\hline
+10000        & 0.84 & 1.68   & 1.86             & 4.95        \\ \hline
+20000        & 0.92 & 2.84   & 4.46             & 14.8        \\ \hline
+30000        & 1.02 & 4.82   & 10.2             & 46.3        \\ \hline
+40000        & 1.53 & 7.88   & 13.8             & 35.9        \\ \hline
+50000        & 1.13 & 5.81   & 19.6             & 37.3        \\ \hline
+60000        & 2.12 & 10.3   & 25.6             & 93.6        \\ \hline
+70000        & 1.39 & 9.11   & 27.1             & 88.0        \\ \hline
+80000        & 1.48 & 13.3   & 29.5             & 64.3        \\ \hline
+90000        & 1.86 & 9.46   & 30.0             & 271.8       \\ \hline
+10000        & 1.86 & 12.0   & 51.1             & 152.4       \\ \hline
+\end{tabular}
+\end{table}
+
+
+In the next we present experimental results considering a composition system as presented in section 4. We measured the sojourn time, and the queue size. The sojourn time is a time between the generation of the update request, or user query and the end of its processing. We assume that the arrivals of both the update requests and user queries are continuous, independent, and occur according to a \textit{Poisson process}. Hence, the interarrival times follow exponential distribution. Since there is no real application, we cannot evaluate these assumptions. Due this, we present also results where the interarrival times follow uniform distribution, to see the effect of different distribution on the measured parameters.
+
+
+\begin{figure}[h]
+\includegraphics{images/obr2.png}
+\caption{Add/remove, reinitialization, and composition time}
+\end{figure}
+
+
+Fig. 3 and 4 present the dependency between the mean interarrival time and sojourn time, and mean queue size, for data sets with 20 000 up to 100 000 services. As we see, there is a signiﬁcant difference between the results when different distributions are used. In the case of exponential, the standard deviation of the results is higher. Moreover, it presents rising tendency as the complexity of the data set, and the sojourn time rises. Similar observations are present also regarding the mean queue size. The system tends to be in stable state when the mean interarrival time is more than a double of the composition time. In this case, the mean queue size (measured after the request is put in it, i.e. it cannot be less than 1) is less than 2. Adequately, the sojourn time is less than a double of the composition time.
+
+\begin{figure}[h]
+\includegraphics{images/obr3.png}
+\caption{Sojourn time: uniform distribution at left, exponential distribution at right}
+\end{figure}
+
+
+Fig. 5 presents the effect of the dynamic changes in the service environment. We had been simulating arrival of requests to add a new, or permanently remove a service, for various interarrival times with exponential distribution. We used the test set with 20 000 services. The experiments show that the sojourn time is not signiﬁcantly enlarged, even if the update requests are frequent. We had dramatically decreased the interarrival time of update requests, from 1 000 to 10 msec. Even in this case, we observed only a little delay in composition. The mean composition query queue size remained low and the stability of the system was not upset.
+
+\begin{figure}[h]
+\includegraphics{images/obr4.png}
+\caption{Queue size: uniform distribution at left, exponential distribution at right}
+\end{figure}
+
+\begin{figure}[h]
+\includegraphics{images/obr5.png}
+\caption{Effect of dynamic changes in the service environment}
+\end{figure}
+
+\section{Conclusions}
+This paper presents a QoS aware composition approach focusing on efﬁciency, and scalability in dynamically changing service environment. We adapted our previous approach to effectively handle the update requirements. The previous approach proved to be fast as it was successful at \textit{Web services Challenge 2009}, a world competition aimed at well performing service composition [11].
+
+ Our composition system manages the updates in much shorter time than composition queries (about one order of magnitude). We have investigated its behavior when simulating continual arrival of user queries collected in queues. Our experiments show that if the mean interarrival time of composition queries is more than a double of composition time, the sojourn time is not signiﬁcantly higher. When the queries arrive more frequently, the sojourn time rises dramatically. Since our composition system manages effectively the update requests, these do not signiﬁcantly affect the sojourn time. We have made also a simulation model of our composition system. It is an effective tool to analyze its behavior, without the need of running it. 
+
+Our future work is to study the behavior of the composition system regarding new simulation scenarios, such as arrival of batches of update requirements. We will study what are the bottlenecks of the composition system, and what modiﬁcations could overcome them. Our assumption is that for example parallel processing of user queries signiﬁcantly reduces the sojourn time. We will use also a simulation model of our composition system, to analyze what modiﬁcations are useful.
+\\
+\\
+\scriptsize \textbf{Acknowledgements} This work was supported by the Scientiﬁc Grant Agency of SR, grant No. VG1/0508/09 and it is a partial result of the Research \& Development Operational Program forthe project Support of Center of Excellence for Smart Technologies, Systems and Services II, ITMS 25240120029, co-funded by ERDF.
+
+
+%\bibliographystyle{splncs}
+%\bibliography{zdroje}
+
+\end{document}
